@@ -2,6 +2,30 @@
 
 A single-user, multi-context productivity dashboard built as an installable Progressive Web App. Every life context lives in an isolated **Space** (University, Sports, Family & Friends, Personal by default). Data lives entirely in the browser in IndexedDB — no backend, no account, no tracking.
 
+## Live app and deployment
+
+- **Live app:** <https://martinzakrzewicz.github.io/personal-dashboard/>
+- **Git repository:** <https://github.com/Martinzakrzewicz/personal-dashboard>
+
+The app is hosted for free on GitHub Pages and is tied to the `main` branch. Every push to `main` runs `.github/workflows/deploy.yml`, which:
+
+1. installs dependencies with `npm ci`;
+2. runs the test suite, typecheck and lint;
+3. builds with the repository subpath as Vite base;
+4. publishes `dist/` to GitHub Pages.
+
+So the normal workflow is simply:
+
+```bash
+git add .
+git commit -m "your change"
+git push
+```
+
+The workflow takes about a minute; refresh the live URL afterwards. If a test, typecheck or lint step fails, the deployment is stopped, so the live app keeps the last successful version.
+
+The repository is public (it contains no secrets or user data). The Pages site is served over HTTPS, which means PWA installation and offline mode work on iPhone Safari.
+
 ## Stack
 
 - Vite + React 18 + TypeScript (strict)
