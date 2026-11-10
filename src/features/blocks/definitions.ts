@@ -9,8 +9,8 @@ export const tasksBlockConfigSchema = z.object({
 });
 
 export const calendarBlockConfigSchema = z.object({
-  version: z.literal(1),
-  days: z.union([z.literal(7), z.literal(14)]),
+  version: z.literal(2),
+  days: z.literal(7),
 });
 
 export const notesBlockConfigSchema = z.object({
@@ -64,10 +64,11 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     descriptionKey: 'blocks.calendar.description',
     iconName: 'CalendarDays',
     multiInstance: true,
-    version: 1,
+    version: 2,
     schema: calendarBlockConfigSchema,
-    defaultConfig: { version: 1, days: 14 },
-    migrate: (config) => ({ ...(isRecord(config) ? config : {}), version: 1 }),
+    defaultConfig: { version: 2, days: 7 },
+    /** v1 used a rolling 7/14-day window; v2 is always a rolling week summary. */
+    migrate: (config) => ({ ...(isRecord(config) ? config : {}), version: 2, days: 7 }),
   },
   {
     type: 'notes',

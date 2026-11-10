@@ -1,11 +1,18 @@
 import { CalendarDays, ListTodo, StickyNote } from 'lucide-react';
-import { useCallback, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore, type DetailView } from '../../app/store';
 import { FullScreenView } from '../../components/ui/FullScreenView';
-import { TasksOverview } from './TasksOverview';
-import { CalendarOverview } from './CalendarOverview';
-import { NotesOverview } from './NotesOverview';
+
+const TasksOverview = lazy(() =>
+  import('./TasksOverview').then((module) => ({ default: module.TasksOverview })),
+);
+const CalendarOverview = lazy(() =>
+  import('./CalendarOverview').then((module) => ({ default: module.CalendarOverview })),
+);
+const NotesOverview = lazy(() =>
+  import('./NotesOverview').then((module) => ({ default: module.NotesOverview })),
+);
 
 export function DetailOverlay() {
   const { t } = useTranslation();
@@ -42,9 +49,13 @@ export function DetailOverlay() {
       icon={config[detailView].icon}
       onClose={onClose}
     >
-      {detailView === 'tasks' ? <TasksOverview /> : null}
-      {detailView === 'calendar' ? <CalendarOverview /> : null}
-      {detailView === 'notes' ? <NotesOverview /> : null}
+      <Suspense
+        fallback={<p className="py-10 text-center text-sm text-muted">{t('detail.loading')}</p>}
+      >
+        {detailView === 'tasks' ? <TasksOverview /> : null}
+        {detailView === 'calendar' ? <CalendarOverview /> : null}
+        {detailView === 'notes' ? <NotesOverview /> : null}
+      </Suspense>
     </FullScreenView>
   );
 }

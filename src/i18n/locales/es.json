@@ -166,6 +166,7 @@
     "days7": "Próximos 7 días",
     "days14": "Próximos 14 días",
     "calendarEmpty": "No hay nada programado en esta ventana.",
+    "calendarSummaryHint": "El resumen del panel siempre muestra la semana móvil que empieza hoy y solo las actividades de este espacio.",
     "notesPlaceholder": "Escribe lo que quieras. Se guarda solo.",
     "notesSaved": "Guardado",
     "notesSaving": "Guardando…",
@@ -182,7 +183,19 @@
     "upcoming": "Próximos",
     "empty": "No hay nada programado en los próximos {{count}} días.",
     "milestones": "Hitos",
-    "noMilestones": "Todavía no hay hitos."
+    "noMilestones": "Todavía no hay hitos.",
+    "monthView": "Mes",
+    "weekView": "Semana",
+    "dayView": "Día",
+    "previous": "Periodo anterior",
+    "next": "Periodo siguiente",
+    "thisWeek": "Esta semana",
+    "summaryEmpty": "No hay nada programado esta semana.",
+    "noEvents": "No hay eventos este día.",
+    "overdue": "Atrasadas",
+    "unscheduled": "Sin fecha",
+    "more": "+{{count}} más",
+    "cellLabel": "{{date}}: {{count}} eventos"
   },
   "detail": {
     "back": "Volver al panel",

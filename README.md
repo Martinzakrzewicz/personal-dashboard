@@ -75,8 +75,10 @@ The capture bar is pinned to the bottom on phones and to the top of the workspac
 Each Tasks, Calendar and Notes block has a **maximize** button in its header. It opens a full-screen focus view with a back button and a space filter:
 
 - **All tasks** — every task from every space, grouped by urgency, with a colored space badge on each row. Low-priority and completed sections keep their collapse controls; tasks can be edited, completed or deleted across spaces.
-- **All calendars** — overdue items, the next 30 days grouped by day (tasks + milestones), and unscheduled tasks. Everything is aggregated across spaces.
+- **All calendars** — a Google-Calendar-style view with **Month**, **Week** and **Day** modes, previous/next/today navigation, Monday-first month grid, colored event chips, and collapsible overdue/unscheduled task lists. Data is aggregated across all spaces. Clicking a month cell opens that day; clicking a task opens its edit sheet.
 - **All notes** — every non-empty note, grouped by space, editable inline with the same 500 ms autosave as the dashboard block.
+
+On the normal dashboard, the Calendar block is now a **rolling-week summary**: it always starts on today (if today is Tuesday, it shows Tuesday through Monday) and only shows tasks and milestones from the active space. Items outside that rolling week remain available in the expanded calendar.
 
 The cross-space views use a dedicated read model (`src/db/overview.repo.ts`) that calls the existing space-scoped repositories once per space. There is still no unfiltered repository query.
 
@@ -176,6 +178,7 @@ src/
 - Switching spaces clears the store synchronously before loading the next space, applies its color as `--space-accent`, and persists the last active space in the `meta` table.
 - The block renderer is generic. A new block type requires a definition in `src/features/blocks/definitions.ts` and a component entry in `src/features/blocks/registry.ts` — no renderer changes. Each definition carries its Zod schema, version, default config, migration function, display-name key and `multiInstance` flag.
 - `notes` intentionally ships at config version 2 with a v1→v2 migrator (`content` → `text`), exercised by tests, so the migration path is real rather than theoretical.
+- The `calendar` config also moved to v2: the old 7/14-day window becomes a fixed rolling 7-day week, and existing blocks are migrated and saved automatically on load.
 
 ## Tests
 
@@ -195,6 +198,8 @@ Coverage includes:
 - task zone rendering order, collapsed low/completed sections, keyboard edit;
 - block registry shape, single/multi-instance rules, and a v1→v2 notes migration;
 - layout persistence across a database reload;
+- Monday-first 42-cell month grids and rolling Tuesday→Monday weeks;
+- calendar config v1→v2 migration;
 - cross-space aggregation and archived-space exclusion;
 - encrypted sync round trips, sync-code parsing, per-record merge, deletion tombstones, and create/join/push orchestration against a mocked Gist API.
 

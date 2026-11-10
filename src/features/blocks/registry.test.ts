@@ -46,7 +46,13 @@ describe('block registry', () => {
     expect(current.config).toEqual({ version: 2, text: 'Current' });
 
     const invalid = normalizeBlockConfig('calendar', { version: 1, days: 99 });
-    expect(invalid.config).toEqual({ version: 1, days: 14 });
+    expect(invalid.config).toEqual({ version: 2, days: 7 });
+  });
+
+  it('migrates the rolling 14-day calendar config to the v2 week view', () => {
+    const result = normalizeBlockConfig('calendar', { version: 1, days: 14 });
+    expect(result.migrated).toBe(true);
+    expect(result.config).toEqual({ version: 2, days: 7 });
   });
 
   it('keeps unknown block types but marks them unknown', () => {

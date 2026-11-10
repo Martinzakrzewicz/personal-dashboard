@@ -25,6 +25,36 @@ export function compareISODate(a: string, b: string): number {
   return a.localeCompare(b);
 }
 
+export function startOfMonthISO(iso: string): string {
+  const date = fromISODate(iso);
+  return toISODate(new Date(date.getFullYear(), date.getMonth(), 1));
+}
+
+export function addMonthsISO(iso: string, months: number): string {
+  const date = fromISODate(iso);
+  return toISODate(new Date(date.getFullYear(), date.getMonth() + months, 1));
+}
+
+/** Monday-based weekday index: Monday = 0 … Sunday = 6. */
+export function mondayIndex(iso: string): number {
+  return (fromISODate(iso).getDay() + 6) % 7;
+}
+
+/** 42-cell month grid (6 rows) starting on the Monday of the month's first week. */
+export function monthGridDates(iso: string): string[] {
+  const first = startOfMonthISO(iso);
+  const gridStart = addDaysISO(first, -mondayIndex(first));
+  return Array.from({ length: 42 }, (_, index) => addDaysISO(gridStart, index));
+}
+
+export function isSameMonth(a: string, b: string): boolean {
+  return a.slice(0, 7) === b.slice(0, 7);
+}
+
+export function rollingWeek(iso: string): string[] {
+  return Array.from({ length: 7 }, (_, index) => addDaysISO(iso, index));
+}
+
 export function isOverdue(dueDate: string | null, status?: string): boolean {
   if (!dueDate) return false;
   if (status === 'done' || status === 'cancelled') return false;

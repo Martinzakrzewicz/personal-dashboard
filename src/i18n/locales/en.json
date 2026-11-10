@@ -166,6 +166,7 @@
     "days7": "Next 7 days",
     "days14": "Next 14 days",
     "calendarEmpty": "Nothing scheduled in this window.",
+    "calendarSummaryHint": "The dashboard summary always shows the rolling week that starts today, for this space only.",
     "notesPlaceholder": "Write anything. It saves automatically.",
     "notesSaved": "Saved",
     "notesSaving": "Saving…",
@@ -182,7 +183,19 @@
     "upcoming": "Upcoming",
     "empty": "Nothing scheduled in the next {{count}} days.",
     "milestones": "Milestones",
-    "noMilestones": "No milestones yet."
+    "noMilestones": "No milestones yet.",
+    "monthView": "Month",
+    "weekView": "Week",
+    "dayView": "Day",
+    "previous": "Previous period",
+    "next": "Next period",
+    "thisWeek": "This week",
+    "summaryEmpty": "Nothing scheduled this week.",
+    "noEvents": "No events on this day.",
+    "overdue": "Overdue",
+    "unscheduled": "No due date",
+    "more": "+{{count}} more",
+    "cellLabel": "{{date}}: {{count}} events"
   },
   "detail": {
     "back": "Back to dashboard",
