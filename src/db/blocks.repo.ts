@@ -1,6 +1,7 @@
 import { db } from './db';
 import type { Block, BlockConfig } from './types';
 import { newId, nowIso } from '../lib/id';
+import { recordDeletion } from '../lib/deletion-log';
 
 export async function listBlocks(spaceId: string): Promise<Block[]> {
   const blocks = await db.blocks.where('spaceId').equals(spaceId).toArray();
@@ -38,6 +39,7 @@ export async function deleteBlock(spaceId: string, id: string): Promise<void> {
   const existing = await db.blocks.get(id);
   if (!existing || existing.spaceId !== spaceId) return;
   await db.blocks.delete(id);
+  recordDeletion('blocks', id);
 }
 
 export async function nextBlockOrder(spaceId: string): Promise<number> {

@@ -1,4 +1,3 @@
-import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../../app/store';
@@ -7,61 +6,10 @@ import { cn } from '../../lib/cn';
 import { groupTasksByZone } from './ordering';
 import { TaskEditSheet } from './TaskEditSheet';
 import { TaskRow } from './TaskRow';
+import { TaskZoneHeading } from './TaskZoneHeading';
 
 interface TaskListProps {
   showCompletedSection?: boolean;
-}
-
-function ZoneHeading({
-  title,
-  count,
-  expanded,
-  onToggle,
-  controls,
-}: {
-  title: string;
-  count: number;
-  expanded?: boolean;
-  onToggle?: () => void;
-  controls?: string;
-}) {
-  const content = (
-    <>
-      <span className="flex items-center gap-1.5">
-        {onToggle ? (
-          expanded ? (
-            <ChevronDown size={16} aria-hidden="true" />
-          ) : (
-            <ChevronRight size={16} aria-hidden="true" />
-          )
-        ) : null}
-        {title}
-      </span>
-      <span className="rounded-full bg-surface2 px-2 py-0.5 text-[11px] font-semibold text-muted">
-        {count}
-      </span>
-    </>
-  );
-
-  if (onToggle) {
-    return (
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={expanded}
-        aria-controls={controls}
-        className="touch-target flex w-full items-center justify-between gap-2 rounded-lg px-1 text-left text-sm font-semibold text-ink hover:bg-surface2"
-      >
-        {content}
-      </button>
-    );
-  }
-
-  return (
-    <div className="flex items-center justify-between gap-2 px-1 text-sm font-semibold text-ink">
-      {content}
-    </div>
-  );
 }
 
 export function TaskList({ showCompletedSection = true }: TaskListProps) {
@@ -85,7 +33,7 @@ export function TaskList({ showCompletedSection = true }: TaskListProps) {
 
       {zones.top.length > 0 ? (
         <section data-testid="task-zone-top" aria-label={t('tasks.topZone')} className="space-y-2">
-          <ZoneHeading title={t('tasks.topZone')} count={zones.top.length} />
+          <TaskZoneHeading title={t('tasks.topZone')} count={zones.top.length} />
           {zones.top.map((task) => (
             <TaskRow key={task.id} task={task} variant="prominent" onOpen={setEditingTask} />
           ))}
@@ -98,7 +46,7 @@ export function TaskList({ showCompletedSection = true }: TaskListProps) {
           aria-label={t('tasks.middleZone')}
           className="space-y-2"
         >
-          <ZoneHeading title={t('tasks.middleZone')} count={zones.middle.length} />
+          <TaskZoneHeading title={t('tasks.middleZone')} count={zones.middle.length} />
           {zones.middle.map((task) => (
             <TaskRow key={task.id} task={task} variant="standard" onOpen={setEditingTask} />
           ))}
@@ -107,7 +55,7 @@ export function TaskList({ showCompletedSection = true }: TaskListProps) {
 
       {zones.low.length > 0 ? (
         <section data-testid="task-zone-low">
-          <ZoneHeading
+          <TaskZoneHeading
             title={t('tasks.lowZone')}
             count={zones.low.length}
             expanded={showLow}
@@ -129,7 +77,7 @@ export function TaskList({ showCompletedSection = true }: TaskListProps) {
           data-testid="task-zone-completed"
           className={cn('border-t border-line pt-3', !hasOpen && 'pt-0')}
         >
-          <ZoneHeading
+          <TaskZoneHeading
             title={t('tasks.completed')}
             count={zones.completed.length}
             expanded={showCompleted}

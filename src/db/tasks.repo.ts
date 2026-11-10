@@ -1,6 +1,7 @@
 import { db } from './db';
 import type { Importance, Task, TaskStatus } from './types';
 import { newId, nowIso } from '../lib/id';
+import { recordDeletion } from '../lib/deletion-log';
 
 export interface CreateTaskInput {
   title: string;
@@ -113,6 +114,7 @@ export async function deleteTask(spaceId: string, id: string): Promise<void> {
     const existing = await db.tasks.get(id);
     if (!existing || existing.spaceId !== spaceId) return;
     await db.tasks.delete(id);
+    recordDeletion('tasks', id);
     const timestamp = nowIso();
     await db.milestones
       .where('spaceId')
@@ -122,7 +124,4 @@ export async function deleteTask(spaceId: string, id: string): Promise<void> {
   });
 }
 
-export async function deleteTaskBySpace(spaceId: string): Promise<void> {
-  const ids = await db.tasks.where('spaceId').equals(spaceId).primaryKeys();
-  await db.tasks.bulkDelete(ids);
-}
+

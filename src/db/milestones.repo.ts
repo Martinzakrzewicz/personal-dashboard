@@ -1,6 +1,7 @@
 import { db } from './db';
 import type { Milestone, MilestoneType } from './types';
 import { newId, nowIso } from '../lib/id';
+import { recordDeletion } from '../lib/deletion-log';
 
 export interface CreateMilestoneInput {
   title: string;
@@ -82,6 +83,7 @@ export async function deleteMilestone(spaceId: string, id: string): Promise<void
     const existing = await db.milestones.get(id);
     if (!existing || existing.spaceId !== spaceId) return;
     await db.milestones.delete(id);
+    recordDeletion('milestones', id);
     const timestamp = nowIso();
     await db.tasks
       .where('spaceId')

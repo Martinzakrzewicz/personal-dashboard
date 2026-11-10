@@ -1,9 +1,10 @@
 import { AlertTriangle, CalendarClock, Check, Flame } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../../app/store';
-import type { Importance, Task } from '../../db/types';
+import type { Importance, Space, Task } from '../../db/types';
 import { formatISODate, isOverdue, relativeDueLabel } from '../../lib/dates';
 import { cn } from '../../lib/cn';
+import { SpaceBadge } from '../spaces/SpaceBadge';
 
 export const IMPORTANCE_VAR: Record<Importance, string> = {
   critical: 'var(--importance-critical)',
@@ -18,6 +19,8 @@ interface TaskRowProps {
   task: Task;
   variant: TaskRowVariant;
   onOpen: (task: Task) => void;
+  space?: Space;
+  onToggle?: (task: Task) => void | Promise<void>;
 }
 
 function DueDateChip({ task, subtle }: { task: Task; subtle?: boolean }) {
@@ -84,7 +87,7 @@ function ImportanceChip({
   );
 }
 
-export function TaskRow({ task, variant, onOpen }: TaskRowProps) {
+export function TaskRow({ task, variant, onOpen, space, onToggle }: TaskRowProps) {
   const { t } = useTranslation();
   const toggleTask = useAppStore((state) => state.toggleTask);
   const completed = task.status === 'done' || task.status === 'cancelled';
@@ -114,15 +117,19 @@ export function TaskRow({ task, variant, onOpen }: TaskRowProps) {
         role="checkbox"
         aria-checked={completed}
         aria-label={t('tasks.toggleDone')}
-        onClick={() => void toggleTask(task.id)}
-        className={cn(
-          'mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition md:-my-1',
-          completed
-            ? 'border-[color:var(--success)] bg-[color:var(--success)] text-[color:var(--bg)]'
-            : 'border-line bg-surface text-transparent hover:border-[color:var(--space-accent)]',
-        )}
+        onClick={() => void (onToggle ? onToggle(task) : toggleTask(task.id))}
+        className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full md:-my-1"
       >
-        <Check size={18} strokeWidth={3} aria-hidden="true" />
+        <span
+          className={cn(
+            'flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 transition',
+            completed
+              ? 'border-[color:var(--success)] bg-[color:var(--success)] text-[color:var(--bg)]'
+              : 'border-line bg-surface text-transparent group-hover:border-[color:var(--space-accent)]',
+          )}
+        >
+          <Check size={13} strokeWidth={3} aria-hidden="true" />
+        </span>
       </button>
 
       <button
@@ -148,6 +155,7 @@ export function TaskRow({ task, variant, onOpen }: TaskRowProps) {
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <ImportanceChip importance={task.importance} />
                 <DueDateChip task={task} />
+                {space ? <SpaceBadge space={space} /> : null}
                 {overdue ? (
                   <span className="text-[11px] font-semibold text-danger">{t('tasks.overdue')}</span>
                 ) : null}
@@ -168,6 +176,7 @@ export function TaskRow({ task, variant, onOpen }: TaskRowProps) {
               </p>
             </div>
             <div className="flex items-center gap-1.5">
+              {space ? <SpaceBadge space={space} /> : null}
               {overdue ? (
                 <span className="text-[11px] font-semibold text-danger">{t('tasks.overdue')}</span>
               ) : null}
@@ -177,6 +186,7 @@ export function TaskRow({ task, variant, onOpen }: TaskRowProps) {
         ) : (
           <div className="flex min-w-0 items-center gap-2">
             <ImportanceChip importance={task.importance} showLabel={false} />
+            {space ? <SpaceBadge space={space} showName={false} /> : null}
             <p
               className={cn(
                 'min-w-0 flex-1 truncate text-sm text-ink',

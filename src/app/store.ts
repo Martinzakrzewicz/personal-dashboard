@@ -50,9 +50,12 @@ import type {
   ThemePreference,
 } from '../db/types';
 import { newId, nowIso } from '../lib/id';
+import { clearDeletionLog } from '../lib/deletion-log';
 
 let loadToken = 0;
 let initPromise: Promise<void> | null = null;
+
+export type DetailView = 'tasks' | 'calendar' | 'notes';
 
 const DEFAULT_ACCENT = '#3B82F6';
 
@@ -130,8 +133,12 @@ interface AppStore {
   language: SupportedLanguage;
   theme: ThemePreference;
   editMode: boolean;
+  detailView: DetailView | null;
 
   init: () => Promise<void>;
+  openDetail: (view: DetailView) => void;
+  closeDetail: () => void;
+  reloadFromDatabase: () => Promise<void>;
   refreshSpaces: () => Promise<void>;
   switchSpace: (spaceId: string) => Promise<void>;
   createSpace: (input: CreateSpaceInput) => Promise<Space | null>;
@@ -142,9 +149,9 @@ interface AppStore {
 
   capture: (raw: string) => Promise<boolean>;
   createTask: (input: CreateTaskInput) => Promise<Task | null>;
-  updateTask: (id: string, patch: UpdateTaskInput) => Promise<Task | null>;
+  updateTask: (id: string, patch: UpdateTaskInput, spaceIdOverride?: string) => Promise<Task | null>;
   toggleTask: (id: string) => Promise<void>;
-  deleteTask: (id: string) => Promise<boolean>;
+  deleteTask: (id: string, spaceIdOverride?: string) => Promise<boolean>;
 
   createMilestone: (input: CreateMilestoneInput) => Promise<Milestone | null>;
   updateMilestone: (id: string, patch: UpdateMilestoneInput) => Promise<boolean>;
@@ -173,6 +180,29 @@ export const useAppStore = create<AppStore>((set, get) => ({
   language: 'en',
   theme: 'system',
   editMode: false,
+  detailView: null,
+
+  openDetail: (view) => set({ detailView: view }),
+  closeDetail: () => set({ detailView: null }),
+
+  reloadFromDatabase: async () => {
+    try {
+      const spaces = await listSpaces();
+      const currentId = get().activeSpaceId;
+      const next =
+        spaces.find((space) => !space.archived && space.id === currentId) ??
+        spaces.find((space) => !space.archived) ??
+        null;
+      set({ spaces });
+      if (next) {
+        await get().switchSpace(next.id);
+      } else {
+        set({ activeSpaceId: null, tasks: [], milestones: [], blocks: [], loadingSpace: false });
+      }
+    } catch {
+      toastError(i18n.t('errors.loadSpaces'));
+    }
+  },
 
   init: async () => {
     if (get().initialized) return;
@@ -411,8 +441,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
-  updateTask: async (id, patch) => {
-    const spaceId = get().activeSpaceId;
+  updateTask: async (id, patch, spaceIdOverride) => {
+    const spaceId = spaceIdOverride ?? get().activeSpaceId;
     if (!spaceId) return null;
     try {
       const updated = await updateTaskRecord(spaceId, id, patch);
@@ -435,17 +465,19 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await get().updateTask(id, { status: nextStatus });
   },
 
-  deleteTask: async (id) => {
-    const spaceId = get().activeSpaceId;
+  deleteTask: async (id, spaceIdOverride) => {
+    const spaceId = spaceIdOverride ?? get().activeSpaceId;
     if (!spaceId) return false;
     try {
       await deleteTaskRecord(spaceId, id);
-      set((state) => ({
-        tasks: state.tasks.filter((task) => task.id !== id),
-        milestones: state.milestones.map((milestone) =>
-          milestone.linkedTaskId === id ? { ...milestone, linkedTaskId: null } : milestone,
-        ),
-      }));
+      if (get().activeSpaceId === spaceId) {
+        set((state) => ({
+          tasks: state.tasks.filter((task) => task.id !== id),
+          milestones: state.milestones.map((milestone) =>
+            milestone.linkedTaskId === id ? { ...milestone, linkedTaskId: null } : milestone,
+          ),
+        }));
+      }
       toastSuccess(i18n.t('tasks.deleted'));
       return true;
     } catch {
@@ -622,6 +654,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   replaceWithBackup: async (backup) => {
     try {
+      clearDeletionLog();
       await importBackupRecord(backup);
       loadToken += 1;
       set({
@@ -658,5 +691,6 @@ export function resetAppStoreForTests(): void {
     language: 'en',
     theme: 'system',
     editMode: false,
+    detailView: null,
   });
 }

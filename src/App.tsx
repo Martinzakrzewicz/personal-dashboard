@@ -9,6 +9,9 @@ import { SettingsSheet } from './features/settings/SettingsSheet';
 import { getSpaceIcon } from './features/spaces/icons';
 import { SpaceSwitcher } from './features/spaces/SpaceSwitcher';
 import { ToastViewport } from './components/ui/ToastViewport';
+import { DetailOverlay } from './features/overview/DetailOverlay';
+import { useSyncStore } from './features/sync/store';
+import { useSyncEngine } from './features/sync/useSyncEngine';
 
 function Splash() {
   const { t } = useTranslation();
@@ -39,10 +42,14 @@ export default function App() {
   const activeSpaceId = useAppStore((state) => state.activeSpaceId);
   const spaces = useAppStore((state) => state.spaces);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const syncEnabled = useSyncStore((state) => state.config !== null);
 
   useEffect(() => {
     void init();
+    useSyncStore.getState().init();
   }, [init]);
+
+  useSyncEngine(initialized && syncEnabled);
 
   if (!initialized) return <Splash />;
 
@@ -96,6 +103,7 @@ export default function App() {
       </div>
 
       <SettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <DetailOverlay />
       <ToastViewport />
     </div>
   );

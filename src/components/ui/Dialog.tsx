@@ -15,6 +15,8 @@ export interface DialogProps {
   wide?: boolean;
 }
 
+const openDialogs: string[] = [];
+
 export function Dialog({
   open,
   onClose,
@@ -25,20 +27,23 @@ export function Dialog({
   wide = false,
 }: DialogProps) {
   const { t } = useTranslation();
+  const dialogId = useId();
   const titleId = useId();
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
+    openDialogs.push(dialogId);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.stopPropagation();
-        onClose();
-      }
+      if (event.key !== 'Escape') return;
+      // Only the topmost dialog handles Escape (nested confirm sheets).
+      if (openDialogs[openDialogs.length - 1] !== dialogId) return;
+      event.stopPropagation();
+      onClose();
     };
     document.addEventListener('keydown', onKeyDown);
 
@@ -50,11 +55,13 @@ export function Dialog({
     }, 30);
 
     return () => {
+      const index = openDialogs.lastIndexOf(dialogId);
+      if (index >= 0) openDialogs.splice(index, 1);
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', onKeyDown);
       window.clearTimeout(focusTimer);
     };
-  }, [open, onClose]);
+  }, [open, onClose, dialogId]);
 
   if (!open) return null;
 

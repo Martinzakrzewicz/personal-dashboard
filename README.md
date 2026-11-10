@@ -1,6 +1,6 @@
 # Personal Dashboard
 
-A single-user, multi-context productivity dashboard built as an installable Progressive Web App. Every life context lives in an isolated **Space** (University, Sports, Family & Friends, Personal by default). Data lives entirely in the browser in IndexedDB — no backend, no account, no tracking.
+A single-user, multi-context productivity dashboard built as an installable Progressive Web App. Every life context lives in an isolated **Space** (University, Sports, Family & Friends, Personal by default). Data lives locally in IndexedDB, with optional end-to-end encrypted sync between devices through a secret GitHub Gist. There is no custom backend, account system or tracking.
 
 ## Live app and deployment
 
@@ -70,6 +70,47 @@ npm run icons   # regenerate placeholder PWA icons
 
 The capture bar is pinned to the bottom on phones and to the top of the workspace on desktop.
 
+## Focus views (layout depth)
+
+Each Tasks, Calendar and Notes block has a **maximize** button in its header. It opens a full-screen focus view with a back button and a space filter:
+
+- **All tasks** — every task from every space, grouped by urgency, with a colored space badge on each row. Low-priority and completed sections keep their collapse controls; tasks can be edited, completed or deleted across spaces.
+- **All calendars** — overdue items, the next 30 days grouped by day (tasks + milestones), and unscheduled tasks. Everything is aggregated across spaces.
+- **All notes** — every non-empty note, grouped by space, editable inline with the same 500 ms autosave as the dashboard block.
+
+The cross-space views use a dedicated read model (`src/db/overview.repo.ts`) that calls the existing space-scoped repositories once per space. There is still no unfiltered repository query.
+
+Task checkboxes were reduced to a 22 px visible marker inside a 44 px touch target, keeping the rows cleaner without hurting accessibility.
+
+## Cross-device sync (computer ↔ phone)
+
+Sync is optional and uses **one secret GitHub Gist per user** as free encrypted storage. No additional backend, subscription or database is required.
+
+### One-time setup
+
+1. Open **Settings → Sync between devices** on the computer.
+2. Create a **classic GitHub token with only the `gist` scope**:
+   <https://github.com/settings/tokens/new?scopes=gist&description=Personal%20Dashboard%20Sync>
+3. Paste the token into Settings and press **Create encrypted sync**.
+4. Copy the generated **sync code** (`pds1.…`). It contains the AES-256 encryption key.
+5. On the phone, open the same live URL → **Settings → Sync between devices → Join existing**.
+6. Paste the same token and sync code, then press **Join sync**. The phone pulls the current data.
+
+After that, changes sync automatically while the app is open:
+
+- local changes push after a 2-second debounce;
+- pulls happen on focus, when the tab becomes visible, every 30 seconds, and with the manual **Sync now** button;
+- deletes use tombstones so a removed task is not resurrected by another device.
+
+### Security and limitations
+
+- The Gist is secret/unlisted, and its contents are encrypted with AES-GCM before leaving the device. GitHub only stores ciphertext.
+- The token is stored only in that browser's `localStorage`; it is never written into the repository, the Gist, or exported backups.
+- The sync code contains the decryption key. Treat it like a password.
+- Merge is per-record, newest `updatedAt` wins. If both devices edit offline at the same time, the next sync converges, but there is no visual conflict-resolution UI yet.
+- The app remains fully usable offline; sync simply waits until a connection is available.
+- If you revoke/delete the token, create a new one and reconnect on each device.
+
 ## Using it on an iPhone (same Wi-Fi)
 
 1. Start the dev server with the host flag: `npm run dev:host`.
@@ -119,17 +160,18 @@ Files with an unknown format or invalid records are rejected without touching ex
 
 ```
 src/
-  app/        Zustand store, toast store
-  features/   spaces, tasks, milestones, blocks, capture, settings
-  db/         Dexie database, typed repositories, seed, backup
-  i18n/       i18next setup + en/es locale files
-  lib/        UUID, date helpers, classnames
-  components/ui/  shared buttons, dialogs, fields, toasts
-  test/       Vitest setup (fake-indexeddb + jest-dom)
+  app/         Zustand store, toast store
+  features/    spaces, tasks, milestones, blocks, capture, settings, overview, sync
+  db/          Dexie database, typed repositories, seed, backup, cross-space read model
+  i18n/        i18next setup + en/es locale files
+  lib/         UUID, dates, classnames, deletion log
+  components/ui/  shared buttons, dialogs, fields, toasts, full-screen view
+  test/        Vitest setup (fake-indexeddb + jest-dom + Web Crypto)
 ```
 
-- Every task, milestone and block repository function requires a `spaceId`; there is no unfiltered task query.
+- Every task, milestone and block repository function requires a `spaceId`; there is no unfiltered task query. The "all spaces" views aggregate results from those scoped calls.
 - Spaces are only ever soft-deleted (`archived = true`). Restore them from Settings.
+- Sync payloads are built from the existing backup format, encrypted client-side, and merged record-by-record. Deletions are tracked separately in a local deletion log so they survive merges.
 - Deleting a task clears `linkedTaskId` on related milestones; deleting a milestone clears `milestoneId` on related tasks.
 - Switching spaces clears the store synchronously before loading the next space, applies its color as `--space-accent`, and persists the last active space in the `meta` table.
 - The block renderer is generic. A new block type requires a definition in `src/features/blocks/definitions.ts` and a component entry in `src/features/blocks/registry.ts` — no renderer changes. Each definition carries its Zod schema, version, default config, migration function, display-name key and `multiInstance` flag.
@@ -152,17 +194,21 @@ Coverage includes:
 - store space-switch clearing (no previous-space data even momentarily);
 - task zone rendering order, collapsed low/completed sections, keyboard edit;
 - block registry shape, single/multi-instance rules, and a v1→v2 notes migration;
-- layout persistence across a database reload.
+- layout persistence across a database reload;
+- cross-space aggregation and archived-space exclusion;
+- encrypted sync round trips, sync-code parsing, per-record merge, deletion tombstones, and create/join/push orchestration against a mocked Gist API.
 
 ## V1 limitations
 
-- Single device, single user. No authentication, server or sync.
+- Sync requires a one-time GitHub token with `gist` scope on each device; there is no managed account system.
+- Sync is not realtime second-by-second; it uses debounced pushes and periodic/focus pulls.
+- No visual conflict-resolution UI (newest record wins).
 - No drag-and-drop layout editing (buttons only, by design for V1).
 - No hard delete for spaces.
 - Backups are manual JSON files.
 
 ## Suggested V2
 
-1. **Sync between devices** — add end-to-end encrypted sync (for example Supabase/Postgres with row-level security, or a small self-hosted server) keyed on the already-present `userId`, `createdAt`/`updatedAt` fields. Implement last-write-wins with tombstones for deletes.
-2. **Block-level polish** — drag-and-drop grid resizing, a proper calendar month view, and recurring tasks/milestones.
+1. **Zero-setup sync** — move the encrypted sync payload to a managed backend (Supabase/Cloudflare D1 or a small self-hosted server), add realtime updates and a proper conflict-resolution UI. Keep the current Gist provider as an offline-friendly free fallback.
+2. **Block-level polish** — drag-and-drop grid resizing, month calendar, recurring tasks/milestones, and web push reminders.
 3. **Smarter capture** — natural-language dates ("tomorrow 5pm", "fri"), voice input on iOS, and quick-capture from a PWA share target.

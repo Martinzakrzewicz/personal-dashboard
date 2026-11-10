@@ -3,17 +3,22 @@ import {
   ArrowUp,
   Eye,
   EyeOff,
+  Maximize2,
   Trash2,
 } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppStore } from '../../app/store';
+import { useAppStore, type DetailView } from '../../app/store';
 import type { Block } from '../../db/types';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../lib/cn';
 import { getRegisteredBlock } from './registry';
 
 const WIDTH_OPTIONS = [3, 4, 6, 8, 12];
+
+function isDetailView(type: string): type is DetailView {
+  return type === 'tasks' || type === 'calendar' || type === 'notes';
+}
 
 interface BlockFrameProps {
   block: Block;
@@ -26,6 +31,7 @@ export function BlockFrame({ block, editMode }: BlockFrameProps) {
   const updateBlock = useAppStore((state) => state.updateBlock);
   const moveBlock = useAppStore((state) => state.moveBlock);
   const removeBlock = useAppStore((state) => state.removeBlock);
+  const openDetail = useAppStore((state) => state.openDetail);
 
   const definition = getRegisteredBlock(block.type);
   const Icon = definition?.Icon;
@@ -58,6 +64,20 @@ export function BlockFrame({ block, editMode }: BlockFrameProps) {
             </span>
           ) : null}
         </div>
+
+        {!editMode && isDetailView(block.type) ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t('blocks.openFull')}
+            title={t('blocks.openFull')}
+            onClick={() => {
+              if (isDetailView(block.type)) openDetail(block.type);
+            }}
+          >
+            <Maximize2 size={16} aria-hidden="true" />
+          </Button>
+        ) : null}
 
         {editMode ? (
           <div className="flex flex-wrap items-center gap-0.5">

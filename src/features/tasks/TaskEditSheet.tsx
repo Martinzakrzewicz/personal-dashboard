@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../../app/store';
-import type { Importance, Task, TaskStatus } from '../../db/types';
+import type { Importance, Milestone, Task, TaskStatus } from '../../db/types';
 import { IMPORTANCE_LEVELS, TASK_STATUSES } from '../../db/types';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
@@ -13,13 +13,26 @@ import { MilestoneList } from '../milestones/MilestoneList';
 interface TaskEditSheetProps {
   task: Task;
   onClose: () => void;
+  spaceId?: string;
+  milestones?: Milestone[];
+  onChanged?: () => void;
 }
 
-export function TaskEditSheet({ task, onClose }: TaskEditSheetProps) {
+export function TaskEditSheet({
+  task,
+  onClose,
+  spaceId,
+  milestones: milestonesProp,
+  onChanged,
+}: TaskEditSheetProps) {
   const { t } = useTranslation();
   const updateTask = useAppStore((state) => state.updateTask);
   const deleteTask = useAppStore((state) => state.deleteTask);
-  const milestones = useAppStore((state) => state.milestones);
+  const activeSpaceId = useAppStore((state) => state.activeSpaceId);
+  const activeMilestones = useAppStore((state) => state.milestones);
+  const milestones = milestonesProp ?? activeMilestones;
+  const effectiveSpaceId = spaceId ?? activeSpaceId ?? task.spaceId;
+  const canManageMilestones = effectiveSpaceId === activeSpaceId;
 
   const [title, setTitle] = useState(task.title);
   const [importance, setImportance] = useState<Importance>(task.importance);
@@ -39,22 +52,32 @@ export function TaskEditSheet({ task, onClose }: TaskEditSheetProps) {
     }
     setSaving(true);
     setError('');
-    const updated = await updateTask(task.id, {
-      title: title.trim(),
-      importance,
-      status,
-      dueDate: dueDate || null,
-      notes,
-      milestoneId: milestoneId || null,
-    });
+    const updated = await updateTask(
+      task.id,
+      {
+        title: title.trim(),
+        importance,
+        status,
+        dueDate: dueDate || null,
+        notes,
+        milestoneId: milestoneId || null,
+      },
+      effectiveSpaceId,
+    );
     setSaving(false);
-    if (updated) onClose();
+    if (updated) {
+      onChanged?.();
+      onClose();
+    }
   };
 
   const onDelete = async () => {
     setConfirmDelete(false);
-    const deleted = await deleteTask(task.id);
-    if (deleted) onClose();
+    const deleted = await deleteTask(task.id, effectiveSpaceId);
+    if (deleted) {
+      onChanged?.();
+      onClose();
+    }
   };
 
   return (
@@ -148,7 +171,7 @@ export function TaskEditSheet({ task, onClose }: TaskEditSheetProps) {
             />
           </Field>
 
-          <MilestoneList />
+          {canManageMilestones ? <MilestoneList /> : null}
 
           {error ? (
             <p role="alert" className="text-sm font-medium text-danger">

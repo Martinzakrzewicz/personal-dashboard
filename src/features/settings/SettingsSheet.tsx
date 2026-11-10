@@ -11,6 +11,7 @@ import { cn } from '../../lib/cn';
 import { Button } from '../../components/ui/Button';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Dialog } from '../../components/ui/Dialog';
+import { SyncSettings } from '../sync/SyncSettings';
 
 const THEMES: ThemePreference[] = ['system', 'light', 'dark'];
 
@@ -181,6 +182,8 @@ export function SettingsSheet({ open, onClose }: SettingsSheetProps) {
             <p className="text-xs text-muted">{t('settings.importHint')}</p>
             <p className="text-xs text-muted">{t('settings.storage')}</p>
           </section>
+
+          <SyncSettings />
 
           <section className="space-y-2">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
