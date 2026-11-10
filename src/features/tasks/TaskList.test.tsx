@@ -80,7 +80,7 @@ describe('TaskList zones', () => {
     useAppStore.setState({ tasks, activeSpaceId: 'space-1', milestones: [], blocks: [] });
     render(<TaskList />);
 
-    const row = screen.getByRole('button', { name: 'Critical task — Open task' });
+    const row = screen.getByRole('button', { name: /Critical task/ });
     row.focus();
     await user.keyboard('{Enter}');
 

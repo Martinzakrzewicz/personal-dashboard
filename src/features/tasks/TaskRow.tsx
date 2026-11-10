@@ -135,7 +135,6 @@ export function TaskRow({ task, variant, onOpen, space, onToggle }: TaskRowProps
       <button
         type="button"
         onClick={() => onOpen(task)}
-        aria-label={`${task.title} — ${t('tasks.open')}`}
         className="min-w-0 flex-1 text-left"
       >
         {variant === 'prominent' ? (
