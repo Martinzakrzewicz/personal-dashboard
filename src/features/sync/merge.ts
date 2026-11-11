@@ -13,6 +13,7 @@ import {
   mergeDeletionLogs,
   type DeletionLog,
 } from '../../lib/deletion-log';
+import { consolidateData } from '../../db/consolidate';
 import { nowIso } from '../../lib/id';
 
 export const SYNC_FORMAT = 'personal-dashboard-sync';
@@ -93,19 +94,23 @@ export function mergeSyncPayloads(local: SyncPayload, remote: SyncPayload): Sync
   const meta = local.backup.data.meta.filter((record) => record.key !== 'schemaVersion');
   meta.push({ key: 'schemaVersion', value: 1 });
 
+  const merged = consolidateData({
+    spaces: mergeTable<Space>(local.backup.data.spaces, remote.backup.data.spaces, {}),
+    tasks: mergeTable<Task>(local.backup.data.tasks, remote.backup.data.tasks, tombstones.tasks),
+    milestones: mergeTable<Milestone>(
+      local.backup.data.milestones,
+      remote.backup.data.milestones,
+      tombstones.milestones,
+    ),
+    blocks: mergeTable<Block>(local.backup.data.blocks, remote.backup.data.blocks, tombstones.blocks),
+  });
+
   const backup: BackupFile = {
     format: local.backup.format,
     version: local.backup.version,
     exportedAt: nowIso(),
     data: {
-      spaces: mergeTable<Space>(local.backup.data.spaces, remote.backup.data.spaces, {}),
-      tasks: mergeTable<Task>(local.backup.data.tasks, remote.backup.data.tasks, tombstones.tasks),
-      milestones: mergeTable<Milestone>(
-        local.backup.data.milestones,
-        remote.backup.data.milestones,
-        tombstones.milestones,
-      ),
-      blocks: mergeTable<Block>(local.backup.data.blocks, remote.backup.data.blocks, tombstones.blocks),
+      ...merged.data,
       meta,
     },
   };

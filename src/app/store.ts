@@ -35,6 +35,7 @@ import {
 } from '../db/blocks.repo';
 import { getMeta, setMeta } from '../db/meta.repo';
 import { seedIfEmpty, createDefaultBlocksForSpace } from '../db/seed';
+import { consolidateDuplicateSpaces } from '../db/consolidate.repo';
 import { importBackup as importBackupRecord } from '../db/backup';
 import { normalizeBlockConfig, getBlockDefinition } from '../features/blocks/definitions';
 import { parseCapture } from '../features/capture/parser';
@@ -211,6 +212,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     initPromise = (async () => {
       try {
         await seedIfEmpty();
+        // A failed migration should not prevent the dashboard from loading.
+        await consolidateDuplicateSpaces().catch(() => undefined);
         const [spaces, languageRaw, themeRaw, lastActiveRaw] = await Promise.all([
           listSpaces(),
           getMeta<unknown>('language'),

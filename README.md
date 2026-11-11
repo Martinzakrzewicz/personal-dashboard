@@ -102,7 +102,8 @@ After that, changes sync automatically while the app is open:
 
 - local changes push after a 2-second debounce;
 - pulls happen on focus, when the tab becomes visible, every 30 seconds, and with the manual **Sync now** button;
-- deletes use tombstones so a removed task is not resurrected by another device.
+- deletes use tombstones so a removed task is not resurrected by another device;
+- spaces with the same normalized name are consolidated automatically. If both devices created their own “University” (different UUIDs), sync keeps one space, moves every task, milestone and block into it, and removes duplicated seed widgets. The operation is deterministic and idempotent, and also runs on app startup to repair duplicates already stored in IndexedDB.
 
 ### Security and limitations
 
@@ -201,7 +202,8 @@ Coverage includes:
 - Monday-first 42-cell month grids and rolling Tuesday→Monday weeks;
 - calendar config v1→v2 migration;
 - cross-space aggregation and archived-space exclusion;
-- encrypted sync round trips, sync-code parsing, per-record merge, deletion tombstones, and create/join/push orchestration against a mocked Gist API.
+- encrypted sync round trips, sync-code parsing, per-record merge, deletion tombstones, and create/join/push orchestration against a mocked Gist API;
+- duplicate-space consolidation: same-name spaces, tasks/milestones/blocks remapping, seeded-widget deduplication, archived handling, idempotence and the IndexedDB repair path.
 
 ## V1 limitations
 

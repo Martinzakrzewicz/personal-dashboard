@@ -39,6 +39,10 @@ function task(id: string, title: string, updatedAt: string) {
   };
 }
 
+function taskInSpace(id: string, spaceId: string, title: string, updatedAt: string) {
+  return { ...task(id, title, updatedAt), spaceId };
+}
+
 describe('sync merge', () => {
   it('keeps the newest record per id and filters tombstoned records', () => {
     const local = createSyncPayload(
@@ -59,6 +63,54 @@ describe('sync merge', () => {
     expect(merged.tombstones.tasks.b).toBe('2026-01-03T00:00:00.000Z');
     expect(merged.tombstones.tasks.c).toBe('2026-01-04T00:00:00.000Z');
     expect(merged.backup.data.meta.find((entry) => entry.key === 'language')?.value).toBe('en');
+  });
+
+  it('consolidates same-name spaces from two devices during a merge', () => {
+    const baseSpace = {
+      color: '#3B82F6',
+      icon: 'graduation-cap',
+      order: 0,
+      archived: false,
+      userId: null,
+      metadata: {},
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const local = createSyncPayload(
+      {
+        format: 'personal-dashboard-backup',
+        version: 1,
+        exportedAt: '2026-01-01T00:00:00.000Z',
+        data: {
+          spaces: [{ id: 'space-a', name: 'University', ...baseSpace }],
+          tasks: [taskInSpace('a', 'space-a', 'Essay', '2026-01-01T00:00:00.000Z')],
+          milestones: [],
+          blocks: [],
+          meta: [],
+        },
+      },
+      'device-a',
+    );
+    const remote = createSyncPayload(
+      {
+        format: 'personal-dashboard-backup',
+        version: 1,
+        exportedAt: '2026-01-01T00:00:00.000Z',
+        data: {
+          spaces: [{ id: 'space-b', name: 'University', ...baseSpace }],
+          tasks: [taskInSpace('b', 'space-b', 'Lab', '2026-01-01T00:00:00.000Z')],
+          milestones: [],
+          blocks: [],
+          meta: [],
+        },
+      },
+      'device-b',
+    );
+
+    const merged = mergeSyncPayloads(local, remote);
+    expect(merged.backup.data.spaces).toHaveLength(1);
+    expect(merged.backup.data.tasks).toHaveLength(2);
+    expect(merged.backup.data.tasks.every((entry) => entry.spaceId === 'space-a')).toBe(true);
   });
 
   it('recognizes equal payload data regardless of record order', () => {
